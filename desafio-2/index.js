@@ -2,27 +2,29 @@ const fs = require('fs').promises;
 
 class ProductManager {
     #path
+    #products
 
     constructor(path) {
         this.#path = path;
+        this.#products = [];
     }
 
     async getProducts() {
         try {
             const file = await fs.readFile(this.#path, 'utf-8');
-            const products = JSON.parse(file);
-            return products;            
+            this.#products = JSON.parse(file); 
+            return this.#products;            
         } catch (error) {
-            console.log(`Error al mostrar los productos, ${error}`)
+            console.log(`Error al mostrar los productos, ${error}`);
         }
     }
 
     async addProduct({ title, description, price, thumbnail , code, stock }) {
         try {
             if(!title || !description || !price || !thumbnail || !code || !stock) return console.log('Faltan datos');
-    
-            const products = await this.getProducts();
-            
+                
+            await this.getProducts();
+
             const newProduct = { 
                 title, 
                 description, 
@@ -30,12 +32,12 @@ class ProductManager {
                 thumbnail,
                 code,
                 stock,
-                id: products.length === 0 ? 1 : products[products.length - 1].id + 1
+                id: this.#products.length === 0 ? 1 : this.#products[this.#products.length - 1].id + 1
             }
     
-            products.push(newProduct);
+            this.#products.push(newProduct);
     
-            return await fs.writeFile(this.#path, JSON.stringify(products, null, 2));
+            return await fs.writeFile(this.#path, JSON.stringify(this.#products, null, 2));
            
         } catch (error) {
             console.log(error)
@@ -44,9 +46,9 @@ class ProductManager {
 
     async getProductById(id) {
         try {
-            const products = await this.getProducts();
+            await this.getProducts();
 
-            const productFound = products.find(prod => prod.id === id);
+            const productFound = this.#products.find(prod => prod.id === id);
 
             if(!productFound) throw new Error(`No se encontro producto con id : ${id}`);
             
@@ -59,7 +61,7 @@ class ProductManager {
 
     async updateProduct(id, updatedProduct ) {
         try {
-            const products = await this.getProducts();
+            await this.getProducts();
 
             const keys = ["title", "description", "price", "thumbnail", "code", "stock",];
 
@@ -71,13 +73,13 @@ class ProductManager {
                 throw new Error(`El producto no cuenta con la clave: ${otherKeys.join(', ')}`);
             }
 
-            const indexFound = products.findIndex(prod => prod.id === id);
+            const indexFound = this.#products.findIndex(prod => prod.id === id);
 
             if(indexFound === -1) throw new Error(`No se encontro producto con id : ${id}`);
 
-            products[indexFound] = { ...products[indexFound], ...updatedProduct };
+            this.#products[indexFound] = { ...this.#products[indexFound], ...updatedProduct };
 
-            return await fs.writeFile(this.#path, JSON.stringify(products, null, 2));
+            return await fs.writeFile(this.#path, JSON.stringify(this.#products, null, 2));
         } catch (error) {
             console.log(error)
         }
@@ -85,11 +87,11 @@ class ProductManager {
 
     async deleteProduct(id) {
         try {
-            const products = await this.getProducts();
+            await this.getProducts();
 
-            if(!products.find(prod => prod.id === id)) throw new Error(`No se encontro producto con id : ${id}`);
+            if(!this.#products.find(prod => prod.id === id)) throw new Error(`No se encontro producto con id : ${id}`);
 
-            const productsFilter = products.filter((product) => product.id != id);
+            const productsFilter = this.#products.filter((product) => product.id != id);
 
             return await fs.writeFile(this.#path, JSON.stringify(productsFilter, null, 2));
 
@@ -119,11 +121,11 @@ async function testing () {
     // const productFound = await productManager.getProductById(1);
     // console.log(productFound);
 
-    productManager.updateProduct(1, { stock: 22222222, title: 'Prueba' });
-    productManager.updateProduct(3, { stock: 22222222, title: 'Prueba', id: 10 });
+    // await productManager.updateProduct(2, { stock: 22222222, title: 'Prueba' });
+    // await productManager.updateProduct(3, { stock: 22222222, title: 'Prueba', id: 10 });
 
 
-    // productManager.deleteProduct(2);
+    // await productManager.deleteProduct(2);
 }
 
 testing();
